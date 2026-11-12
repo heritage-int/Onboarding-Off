@@ -1,0 +1,63 @@
+# Déploiement automatique de la plateforme Heritage Int sur Hostinger.
+# Se lance à chaque envoi sur la branche main, ou à la main (onglet Actions > Déployer sur Hostinger > Run workflow).
+# Secrets à créer (Settings > Secrets and variables > Actions > New repository secret) :
+#   FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, ADMIN_PASS_HASH, OWNER_PRO_PASS_HASH, et si besoin STRIPE_WEBHOOK_SECRET
+# Variables facultatives (onglet Variables) : FTP_DIR (défaut public_html/app/), SITE_URL (défaut https://heritageint.fr/app)
+name: Déployer sur Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-hostinger
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: ${{ vars.SITE_URL || 'https://heritageint.fr/app' }}
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Vérifier la syntaxe PHP
+        run: for f in api.php lib.php stripe-webhook.php deploy/make-config.php; do php -l "$f"; done
+
+      - name: Créer config.php à partir des secrets
+        env:
+          ADMIN_PASS_HASH: ${{ secrets.ADMIN_PASS_HASH }}
+          OWNER_PRO_PASS_HASH: ${{ secrets.OWNER_PRO_PASS_HASH }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+        run: php deploy/make-config.php && php -l config.php
+
+      - name: Envoyer sur Hostinger (FTP)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ vars.FTP_DIR || 'public_html/app/' }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            deploy/**
+            data/*.sqlite*
+            README.md
+            GUIDE-INSTALLATION.txt
+            demarrer-codespace.sh
+            plateforme-github.sh
+
+      - name: Vérifier que la plateforme répond
+        run: |
+          sleep 5
+          curl -fsS "$SITE_URL/api.php?a=me" | grep -q '"csrf"' && echo "La plateforme répond : $SITE_URL"
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/config.php")
+          if [ "$code" = "200" ]; then echo "ATTENTION : config.php est accessible (code $code). Vérifiez que .htaccess a bien été envoyé."; exit 1; fi
+          echo "config.php est protégé (code $code)."
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/data/heritage.sqlite")
+          if [ "$code" = "200" ]; then echo "ATTENTION : la base de données est accessible."; exit 1; fi
+          echo "La base de données est protégée (code $code)."

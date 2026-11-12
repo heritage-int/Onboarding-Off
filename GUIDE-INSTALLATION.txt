@@ -1,0 +1,53 @@
+PLATEFORME HERITAGE INT — MISE EN LIGNE SUR HOSTINGER
+
+CONFIGURATION OBLIGATOIRE
+- config.php n'est pas inclus dans le dépôt : il contient des secrets et doit rester privé.
+   Pour une installation manuelle, copiez config.example.php en config.php et renseignez ADMIN_PASS_HASH
+   et OWNER_PRO_PASS_HASH avec des empreintes générées par PHP :
+   php -r 'echo password_hash("VotreMotDePasse", PASSWORD_DEFAULT);'
+- Avec GitHub Actions, ces empreintes sont générées dans config.php à partir des secrets ADMIN_PASS_HASH
+   et OWNER_PRO_PASS_HASH (voir README.md). N'envoyez jamais les mots de passe ou config.php sur GitHub.
+- Identifiants initiaux : admin (Administration 360) et heritage (compte pro offert, accès complet).
+- La page client Heritage Int et son catalogue sont créés au premier démarrage.
+- Votre page client : catalogue Heritage Int (Event Design, Wedding Design, Gastronomic Experiences).
+
+MISE EN LIGNE (10 minutes)
+1. Créez config.php à partir de config.example.php comme indiqué ci-dessus (ou configurez les secrets GitHub Actions).
+2. hPanel > Sites web > heritageint.fr > Gestionnaire de fichiers > public_html.
+3. Créez un dossier  app  et envoyez-y TOUT le contenu (y compris config.php, .htaccess et data/.htaccess).
+   Le plus simple : envoyez le zip dans public_html/app puis cliquez sur « Extraire ».
+4. Ouvrez https://heritageint.fr/app/  → la page d'accueil s'affiche, la base se crée toute seule.
+5. Connectez-vous avec admin et heritage en utilisant les mots de passe associés aux empreintes configurées.
+   Changez ces deux mots de passe dès la première connexion.
+6. Contrôles de sécurité, ces deux adresses doivent afficher « Accès interdit » :
+   https://heritageint.fr/app/config.php
+   https://heritageint.fr/app/data/heritage.sqlite
+
+LIENS À PARTAGER
+- Professionnels (inscription + essai gratuit) : https://heritageint.fr/app/#/inscription-pro
+- Vos clients (votre page d'estimation)       : https://heritageint.fr/app/?p=heritage-int
+- Sur votre site, la page « Estimation en ligne » peut afficher votre page :
+  <iframe src="https://heritageint.fr/app/?p=heritage-int" style="width:100%;height:1200px;border:0" title="Estimation"></iframe>
+
+ENCAISSER LES ABONNEMENTS (STRIPE)
+1. Créez un compte Stripe au nom de votre société.
+2. Produits : créez Essentiel, Pro et Signature en paiement récurrent mensuel, puis un « lien de paiement » pour chacun.
+3. Administration 360 > Abonnements et charges : collez les 3 liens, ajustez prix et charges mensuelles, enregistrez.
+4. Stripe > Développeurs > Webhooks > Ajouter un endpoint : https://heritageint.fr/app/stripe-webhook.php
+   Événements : checkout.session.completed, invoice.paid, invoice.payment_failed, customer.subscription.deleted
+   Copiez le « secret de signature » (whsec_...) dans config.php > STRIPE_WEBHOOK_SECRET.
+Sans Stripe, tout fonctionne : vous activez les abonnements à la main (onglet Professionnels)
+et vous saisissez les encaissements (onglet Paiements et CA).
+
+E-MAILS
+Les alertes partent de contact@heritageint.fr : créez cette boîte dans Hostinger (E-mails), sinon elles risquent
+d'arriver en spam. Vous recevez un e-mail à chaque nouvelle inscription de professionnel ;
+chaque professionnel reçoit un e-mail à chaque nouvelle demande de ses clients.
+
+SAUVEGARDE
+Téléchargez régulièrement public_html/app/data/heritage.sqlite : il contient tous les comptes, demandes et paiements.
+
+AVANT D'OUVRIR AU PUBLIC
+- Conditions générales d'utilisation et de vente de l'abonnement, politique de confidentialité :
+  vous hébergez les données des clients de vos professionnels (contrat de traitement RGPD). Faites-les valider (LegalPlace).
+- Testez l'accès depuis la Chine (demandez à un contact sur place d'ouvrir la page client).
