@@ -1,0 +1,7 @@
+# Mots de passe (empreintes) et secrets : jamais sur GitHub
+config.php
+# Base de données : comptes, demandes, paiements (données personnelles)
+data/*.sqlite
+data/*.sqlite-*
+.DS_Store
+Thumbs.db
